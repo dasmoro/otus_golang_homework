@@ -1,4 +1,4 @@
-module github.com/dasmoro/otus_golang_homework
+module github.com/dasmoro/otus_golang_homework/hw01_hello_otus
 
 go 1.15
 
