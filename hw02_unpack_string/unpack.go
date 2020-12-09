@@ -26,10 +26,8 @@ func Unpack(s *string) (string, error) {
 				result += strings.Repeat(buf, int(c-'0'))
 				buf = ""
 			default:
-				if len(buf) > 0 && !isEscape {
-					result += buf
-				}
-				buf = string(c)
+				err = ErrInvalidString
+				return "", err
 			}
 		} else {
 			if len(buf) > 0 && !isEscape {
