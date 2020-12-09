@@ -6,10 +6,10 @@ import (
 	"unicode"
 )
 
-// ErrInvalidString - error when uncpacked stgring have errors
+// ErrInvalidString - error when uncpacked stgring have errors.
 var ErrInvalidString = errors.New("invalid string")
 
-// Unpack is a simple string unpack
+// Unpack is a simple string unpack.
 func Unpack(s *string) (string, error) {
 	var buf, result string
 	var err error
@@ -19,14 +19,17 @@ func Unpack(s *string) (string, error) {
 		isEscape = !isEscape && buf == `\`
 
 		if unicode.IsDigit(c) {
-			if isEscape {
+			switch {
+			case isEscape:
 				buf = string(c)
-			} else if len(buf) > 0 {
+			case len(buf) > 0:
 				result += strings.Repeat(buf, int(c-'0'))
 				buf = ""
-			} else {
-				err = ErrInvalidString
-				return "", err
+			default:
+				if len(buf) > 0 && !isEscape {
+					result += buf
+				}
+				buf = string(c)
 			}
 		} else {
 			if len(buf) > 0 && !isEscape {
