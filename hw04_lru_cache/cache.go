@@ -48,7 +48,7 @@ func (lru *lruCache) Clear() {
 }
 
 func (lru *lruCache) GetCacheKeys() []interface{} {
-	result := make([]interface{}, 3)
+	result := make([]interface{}, 0)
 	for i := lru.queue.Front(); i != nil; i = i.Prev {
 		result = append(result, i.Value.(cacheItem).key)
 	}
