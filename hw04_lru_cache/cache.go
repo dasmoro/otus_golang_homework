@@ -6,13 +6,16 @@ type Cache interface {
 	Get(string) (interface{}, bool)
 	Set(string, interface{}) bool
 	Clear()
-	GetCacheKeys() []interface{}
 }
 
 type lruCache struct {
 	capacity int
 	queue    List
 	items    map[string]*ListItem
+}
+
+func NewCache(capacity int) Cache {
+	return &lruCache{capacity: capacity, items: map[string]*ListItem{}, queue: NewList()}
 }
 
 func (lru *lruCache) Get(key string) (interface{}, bool) {
@@ -47,19 +50,7 @@ func (lru *lruCache) Clear() {
 	lru.items = map[string]*ListItem{}
 }
 
-func (lru *lruCache) GetCacheKeys() []interface{} {
-	result := make([]interface{}, 0)
-	for i := lru.queue.Front(); i != nil; i = i.Prev {
-		result = append(result, i.Value.(cacheItem).key)
-	}
-	return result
-}
-
 type cacheItem struct {
 	key   string
 	value interface{}
-}
-
-func NewCache(capacity int) Cache {
-	return &lruCache{capacity: capacity, items: map[string]*ListItem{}, queue: NewList()}
 }
