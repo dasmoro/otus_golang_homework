@@ -77,7 +77,7 @@ func bogoSort(arr []int) ([]int, error) {
 		if sort.IntsAreSorted(arr) {
 			return arr, nil
 		}
-		if elapsedTime > time.Millisecond*50 {
+		if elapsedTime > time.Second*2 {
 			return nil, fmt.Errorf("Max execution time is reached")
 		}
 		arr = shuffle(arr)
