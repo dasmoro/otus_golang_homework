@@ -191,6 +191,11 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 		return err
 	}
 
+	err = to.file.Truncate(0)
+	if err != nil {
+		return err
+	}
+
 	fromSize := from.GetSize()
 	N := fromSize - offset
 	if limit < N && limit != 0 {
@@ -224,9 +229,7 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	pr.Close()
 
 	if showProgress {
-		log.Print("\033[2J")
-		log.Printf("\033[%d;%dH", 0, 0)
-		log.Print("100% complete")
+		log.Print("\n100% complete\n")
 	}
 
 	return nil
