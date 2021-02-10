@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -76,7 +76,7 @@ func BuildMyFile(filename string, mode int) (*MyFile, error) {
 var termMu = sync.Mutex{}
 
 func RenderProgress(x int, y int, percents *byte, done <-chan interface{}) {
-	fmt.Print("\033[2J") // clear terminal
+	log.Print("\033[2J") // clear terminal
 	up := true
 	for {
 		select {
@@ -86,8 +86,8 @@ func RenderProgress(x int, y int, percents *byte, done <-chan interface{}) {
 			if up {
 				for i := 0; i < 11; i++ {
 					termMu.Lock()
-					fmt.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
-					fmt.Printf("%v%% complete\n", *percents)
+					log.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
+					log.Printf("%v%% complete\n", *percents)
 					DrawGopher(x, y+2, i)
 					termMu.Unlock()
 					time.Sleep(100 * time.Millisecond)
@@ -97,14 +97,14 @@ func RenderProgress(x int, y int, percents *byte, done <-chan interface{}) {
 			} else {
 				for i := 10; i >= 0; i-- {
 					termMu.Lock()
-					fmt.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
-					fmt.Printf("%v%% complete\n", *percents)
+					log.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
+					log.Printf("%v%% complete\n", *percents)
 					DrawGopher(x, y+2, i)
 					termMu.Unlock()
 					time.Sleep(30 * time.Millisecond)
 				}
 				time.Sleep(200 * time.Millisecond)
-				fmt.Print("\033[2J")
+				log.Print("\033[2J")
 				x += 5
 				up = true
 			}
@@ -127,12 +127,12 @@ func DrawGopher(x int, y int, frame int) {
 		`   |                           |   `,
 	}
 	emptyStr := `                                   `
-	fmt.Printf("\033[%d;%dH", y, 0)
+	log.Printf("\033[%d;%dH", y, 0)
 	for i := 0; i < len(gopher); i++ {
 		if i < len(gopher)-1-frame {
-			fmt.Printf("%v%v\n", strings.Repeat(" ", x), emptyStr)
+			log.Printf("%v%v\n", strings.Repeat(" ", x), emptyStr)
 		} else {
-			fmt.Printf("%v%v\n", strings.Repeat(" ", x), gopher[i-len(gopher)+1+frame])
+			log.Printf("%v%v\n", strings.Repeat(" ", x), gopher[i-len(gopher)+1+frame])
 		}
 	}
 }
@@ -220,9 +220,9 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	pr.Close()
 
 	if showProgress {
-		fmt.Print("\033[2J")
-		fmt.Printf("\033[%d;%dH", 0, 0)
-		fmt.Print("100% complete")
+		log.Print("\033[2J")
+		log.Printf("\033[%d;%dH", 0, 0)
+		log.Print("100% complete")
 	}
 
 	return nil
