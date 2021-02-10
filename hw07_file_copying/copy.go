@@ -137,6 +137,44 @@ func DrawGopher(x int, y int, frame int) {
 	}
 }
 
+func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
+	defer pw.Close()
+	buf := make([]byte, chunkSize)
+	for {
+		if *needToRead < int64(chunkSize) {
+			buf = buf[0:*needToRead]
+		}
+		n, err := fromFile.file.Read(buf)
+
+		*needToRead -= int64(n)
+		_, pErr := pw.Write(buf)
+
+		if pErr != nil {
+			break
+		}
+
+		if errors.Is(err, io.EOF) || *needToRead <= 0 {
+			break
+		}
+	}
+}
+
+func progress(fromSize int64, elapsed *int64) {
+	size := float64(atomic.LoadInt64(&fromSize))
+	var percents byte = 0
+	doneCh := make(chan interface{})
+	go RenderProgress(0, 0, &percents, doneCh)
+	for {
+		time.Sleep(time.Millisecond * 100)
+		n := float64(atomic.LoadInt64(elapsed))
+		percents = 100 - byte(n/size*100)
+		if percents >= 100 {
+			doneCh <- 1
+			break
+		}
+	}
+}
+
 func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error {
 	from, err := BuildMyFile(fromPath, os.O_RDONLY)
 
@@ -166,44 +204,10 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 
 	pr, pw := io.Pipe()
 
-	go func() {
-		defer pw.Close()
-		buf := make([]byte, chunkSize)
-		for {
-			if N < int64(chunkSize) {
-				buf = buf[0:N]
-			}
-			n, err := from.file.Read(buf)
-
-			N -= int64(n)
-			_, pErr := pw.Write(buf)
-
-			if pErr != nil {
-				break
-			}
-
-			if errors.Is(err, io.EOF) || N <= 0 {
-				break
-			}
-		}
-	}()
+	go readPipe(*pw, from, &N)
 
 	if showProgress {
-		go func() {
-			size := float64(atomic.LoadInt64(&fromSize))
-			var percents byte = 0
-			doneCh := make(chan interface{})
-			go RenderProgress(0, 0, &percents, doneCh)
-			for {
-				time.Sleep(time.Millisecond * 100)
-				n := float64(atomic.LoadInt64(&N))
-				percents = 100 - byte(n/size*100)
-				if percents >= 100 {
-					doneCh <- 1
-					break
-				}
-			}
-		}()
+		go progress(fromSize, &N)
 	}
 
 	buf := make([]byte, chunkSize)
