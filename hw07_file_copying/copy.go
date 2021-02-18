@@ -200,7 +200,6 @@ func prepare(fromPath, toPath string, offset int64) (*MyFile, *MyFile, error) {
 }
 
 func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error {
-
 	from, to, err := prepare(fromPath, toPath, offset)
 	if err != nil {
 		return err
