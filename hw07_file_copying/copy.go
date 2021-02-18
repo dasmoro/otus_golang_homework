@@ -162,7 +162,7 @@ func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
 
 func progress(fromSize int64, elapsed *int64) {
 	size := float64(atomic.LoadInt64(&fromSize))
-	var percents byte = 0
+	var percents byte
 	doneCh := make(chan interface{})
 	go RenderProgress(0, 0, &percents, doneCh)
 	for {
@@ -176,6 +176,7 @@ func progress(fromSize int64, elapsed *int64) {
 	}
 }
 
+//gocyclo:ignore
 func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error {
 	if fromPath == toPath {
 		return errors.New("from and to are equals")
