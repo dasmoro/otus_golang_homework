@@ -23,7 +23,7 @@ type MyFile struct {
 	size     int64
 }
 
-func (ef *MyFile) Init(filename string, mode int) error {
+func (ef *MyFile) init(filename string, mode int) error {
 	file, err := os.OpenFile(filename, mode, 0644)
 	if err != nil {
 		return err
@@ -35,6 +35,9 @@ func (ef *MyFile) Init(filename string, mode int) error {
 		return err
 	}
 
+	if fi.IsDir() {
+		return errors.New("unsupported type (directory)")
+	}
 	ef.filename = filename
 	ef.file = file
 	ef.fi = fi
@@ -64,9 +67,9 @@ func (ef *MyFile) SetOffset(offset int64) error {
 	return nil
 }
 
-func BuildMyFile(filename string, mode int) (*MyFile, error) {
+func NewMyFile(filename string, mode int) (*MyFile, error) {
 	f := MyFile{}
-	err := f.Init(filename, mode)
+	err := f.init(filename, mode)
 	if err != nil {
 		return nil, err
 	}
@@ -85,22 +88,14 @@ func RenderProgress(x int, y int, percents *byte, done <-chan interface{}) {
 		default:
 			if up {
 				for i := 0; i < 11; i++ {
-					termMu.Lock()
-					log.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
-					log.Printf("%v%% complete\n", *percents)
-					DrawGopher(x, y+2, i)
-					termMu.Unlock()
+					DrawGopher(x, y+2, i, percents)
 					time.Sleep(100 * time.Millisecond)
 				}
 				time.Sleep(200 * time.Millisecond)
 				up = false
 			} else {
 				for i := 10; i >= 0; i-- {
-					termMu.Lock()
-					log.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
-					log.Printf("%v%% complete\n", *percents)
-					DrawGopher(x, y+2, i)
-					termMu.Unlock()
+					DrawGopher(x, y+2, i, percents)
 					time.Sleep(30 * time.Millisecond)
 				}
 				time.Sleep(200 * time.Millisecond)
@@ -112,7 +107,11 @@ func RenderProgress(x int, y int, percents *byte, done <-chan interface{}) {
 	}
 }
 
-func DrawGopher(x int, y int, frame int) {
+func DrawGopher(x int, y int, frame int, percents *byte) {
+	termMu.Lock()
+	log.Printf("\033[%d;%dH", y, x) // place cursor at top left corner
+	log.Printf("%v%% complete\n", *percents)
+
 	gopher := []string{
 		`        ,_---~~~~~----._         `,
 		`  _,,_,*^____      _____''*g*\\\"*, `,
@@ -135,6 +134,8 @@ func DrawGopher(x int, y int, frame int) {
 			log.Printf("%v%v\n", strings.Repeat(" ", x), gopher[i-len(gopher)+1+frame])
 		}
 	}
+
+	termMu.Unlock()
 }
 
 func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
@@ -176,7 +177,10 @@ func progress(fromSize int64, elapsed *int64) {
 }
 
 func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error {
-	from, err := BuildMyFile(fromPath, os.O_RDONLY)
+	if fromPath == toPath {
+		return errors.New("from and to are equals")
+	}
+	from, err := NewMyFile(fromPath, os.O_RDONLY)
 
 	if err != nil {
 		return err
@@ -186,7 +190,7 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	if err != nil {
 		return err
 	}
-	to, err := BuildMyFile(toPath, os.O_CREATE|os.O_RDWR)
+	to, err := NewMyFile(toPath, os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return err
 	}

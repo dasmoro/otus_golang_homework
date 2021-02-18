@@ -106,4 +106,16 @@ func TestCopy(t *testing.T) {
 		require.Error(t, err)
 
 	})
+
+	t.Run("dir", func(t *testing.T) {
+		err := Copy("testdata", "test.test", 0, 0, false)
+		t.Log(err)
+		require.Error(t, err)
+	})
+
+	t.Run("equals", func(t *testing.T) {
+		err := Copy("copy.go", "copy.go", 0, 0, false)
+		t.Log(err)
+		require.Error(t, err)
+	})
 }
