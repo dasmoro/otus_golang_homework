@@ -138,7 +138,7 @@ func DrawGopher(x int, y int, frame int, percents *byte) {
 	termMu.Unlock()
 }
 
-func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
+func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64, unsupFtypeErr *error) {
 	defer pw.Close()
 	buf := make([]byte, chunkSize)
 	for {
@@ -146,6 +146,10 @@ func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
 			buf = buf[0:*needToRead]
 		}
 		n, err := fromFile.file.Read(buf)
+		if n == 0 && err == nil {
+			*unsupFtypeErr = errors.New("unsupported file type")
+			pw.Close()
+		}
 
 		*needToRead -= int64(n)
 		_, pErr := pw.Write(buf)
@@ -218,7 +222,8 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 
 	pr, pw := io.Pipe()
 
-	go readPipe(*pw, from, &N)
+	var unsupportedFtypeErr error
+	go readPipe(*pw, from, &N, &unsupportedFtypeErr)
 
 	if showProgress {
 		go progress(fromSize, &N)
@@ -227,6 +232,11 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	buf := make([]byte, chunkSize)
 	for {
 		n, err := pr.Read(buf)
+		if unsupportedFtypeErr != nil {
+			to.file.Close()
+			os.Remove(to.filename)
+			return unsupportedFtypeErr
+		}
 		_, wErr := to.file.Write(buf[:n])
 		if wErr != nil {
 			break

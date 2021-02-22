@@ -118,4 +118,10 @@ func TestCopy(t *testing.T) {
 		t.Log(err)
 		require.Error(t, err)
 	})
+
+	t.Run("linux random filesize things", func(t *testing.T) {
+		err := Copy("/dev/random", "test.test", 0, 0, false)
+		t.Log(err)
+		require.Error(t, err)
+	})
 }
