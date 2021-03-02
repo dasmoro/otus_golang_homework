@@ -35,9 +35,10 @@ func (ef *MyFile) init(filename string, mode int) error {
 		return err
 	}
 
-	if fi.IsDir() {
-		return errors.New("unsupported type (directory)")
+	if !fi.Mode().IsRegular() {
+		return errors.New("unsupported type")
 	}
+
 	ef.filename = filename
 	ef.file = file
 	ef.fi = fi
@@ -138,34 +139,30 @@ func DrawGopher(x int, y int, frame int, percents *byte) {
 	termMu.Unlock()
 }
 
-func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64, unsupFtypeErr *error) {
+func readPipe(pw io.PipeWriter, fromFile *MyFile, needToRead *int64) {
 	defer pw.Close()
 	buf := make([]byte, chunkSize)
+	localNeedToRead := atomic.LoadInt64(needToRead)
 	for {
-		if *needToRead < int64(chunkSize) {
-			buf = buf[0:*needToRead]
+		if localNeedToRead < int64(chunkSize) {
+			buf = buf[0:int(localNeedToRead)]
 		}
 		n, err := fromFile.file.Read(buf)
-		if n == 0 && err == nil {
-			*unsupFtypeErr = errors.New("unsupported file type")
-			pw.Close()
-		}
-
-		*needToRead -= int64(n)
+		localNeedToRead -= int64(n)
+		atomic.StoreInt64(needToRead, localNeedToRead)
 		_, pErr := pw.Write(buf)
 
 		if pErr != nil {
 			break
 		}
-
-		if errors.Is(err, io.EOF) || *needToRead <= 0 {
+		if errors.Is(err, io.EOF) || localNeedToRead <= 0 {
 			break
 		}
 	}
 }
 
 func progress(fromSize int64, elapsed *int64) {
-	size := float64(atomic.LoadInt64(&fromSize))
+	size := float64(fromSize)
 	var percents byte
 	doneCh := make(chan interface{})
 	go RenderProgress(0, 0, &percents, doneCh)
@@ -222,8 +219,7 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 
 	pr, pw := io.Pipe()
 
-	var unsupportedFtypeErr error
-	go readPipe(*pw, from, &N, &unsupportedFtypeErr)
+	go readPipe(*pw, from, &N)
 
 	if showProgress {
 		go progress(fromSize, &N)
@@ -232,11 +228,6 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	buf := make([]byte, chunkSize)
 	for {
 		n, err := pr.Read(buf)
-		if unsupportedFtypeErr != nil {
-			to.file.Close()
-			os.Remove(to.filename)
-			return unsupportedFtypeErr
-		}
 		_, wErr := to.file.Write(buf[:n])
 		if wErr != nil {
 			break
