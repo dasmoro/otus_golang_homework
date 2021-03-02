@@ -207,9 +207,9 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 	}
 
 	fromSize := from.GetSize()
-	N := fromSize - offset
-	if limit < N && limit != 0 {
-		N = limit
+	needToRead := fromSize - offset
+	if limit < needToRead && limit != 0 {
+		needToRead = limit
 	}
 
 	defer func() {
@@ -219,10 +219,10 @@ func Copy(fromPath, toPath string, offset, limit int64, showProgress bool) error
 
 	pr, pw := io.Pipe()
 
-	go readPipe(*pw, from, &N)
+	go readPipe(*pw, from, &needToRead)
 
 	if showProgress {
-		go progress(fromSize, &N)
+		go progress(fromSize, &needToRead)
 	}
 
 	buf := make([]byte, chunkSize)
