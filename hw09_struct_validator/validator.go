@@ -47,14 +47,6 @@ func (v *Validator) isStr() *ValidationError {
 	return nil
 }
 
-// func (v *Validator) required() *ValidationError {
-// 	if v.fieldV.IsZero() {
-// 		vErr := &ValidationError{v.fieldT.Name, errors.New("field is required")}
-// 		return vErr
-// 	}
-// 	return nil
-// }
-
 func (v *Validator) required(rexp regexp.Regexp, tag string) *ValidationError {
 	if rexp.MatchString(tag) && v.fieldV.IsZero() {
 		vErr := &ValidationError{v.fieldT.Name, errors.New("field is required")}
@@ -62,19 +54,6 @@ func (v *Validator) required(rexp regexp.Regexp, tag string) *ValidationError {
 	}
 	return nil
 }
-
-// func (v *Validator) min(min int) *ValidationError {
-// 	err := v.isInt()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	intV := int(v.fieldV.Int())
-// 	if intV < min {
-// 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must be greater or equal than %v", min)}
-// 		return vErr
-// 	}
-// 	return nil
-// }
 
 func (v *Validator) min(rexp regexp.Regexp, tag string) *ValidationError {
 	if !rexp.MatchString(tag) {
@@ -85,27 +64,12 @@ func (v *Validator) min(rexp regexp.Regexp, tag string) *ValidationError {
 		return err
 	}
 	minS := rexp.FindStringSubmatch(tag)[1]
-	min, _ := strconv.Atoi(minS)
-	intV := int(v.fieldV.Int())
-	if intV < min {
+	if min, _ := strconv.Atoi(minS); int(v.fieldV.Int()) < min {
 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must be greater or equal than %v", min)}
 		return vErr
 	}
 	return nil
 }
-
-// func (v *Validator) max(max int) *ValidationError {
-// 	err := v.isInt()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	intV := int(v.fieldV.Int())
-// 	if intV > max {
-// 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must be less or equal than %v", max)}
-// 		return vErr
-// 	}
-// 	return nil
-// }
 
 func (v *Validator) max(rexp regexp.Regexp, tag string) *ValidationError {
 	if !rexp.MatchString(tag) {
@@ -116,27 +80,12 @@ func (v *Validator) max(rexp regexp.Regexp, tag string) *ValidationError {
 		return err
 	}
 	maxS := rexp.FindStringSubmatch(tag)[1]
-	max, _ := strconv.Atoi(maxS)
-	intV := int(v.fieldV.Int())
-	if intV > max {
+	if max, _ := strconv.Atoi(maxS); int(v.fieldV.Int()) > max {
 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must be less or equal than %v", max)}
 		return vErr
 	}
 	return nil
 }
-
-// func (v *Validator) strSize(size int) *ValidationError {
-// 	err := v.isStr()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	strV := v.fieldV.String()
-// 	if len(strV) != size {
-// 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must contain a %v characters", size)}
-// 		return vErr
-// 	}
-// 	return nil
-// }
 
 func (v *Validator) strSize(rexp regexp.Regexp, tag string) *ValidationError {
 	if !rexp.MatchString(tag) {
@@ -147,38 +96,13 @@ func (v *Validator) strSize(rexp regexp.Regexp, tag string) *ValidationError {
 		return err
 	}
 	sizeS := rexp.FindStringSubmatch(tag)[1]
-	size, _ := strconv.Atoi(sizeS)
 	strV := v.fieldV.String()
-	if len(strV) != size {
+	if size, _ := strconv.Atoi(sizeS); len(strV) != size {
 		vErr := &ValidationError{v.fieldT.Name, fmt.Errorf("field must contain a %v characters", size)}
 		return vErr
 	}
 	return nil
 }
-
-// func (v *Validator) inSlice(items []string) *ValidationError {
-// 	var vErr *ValidationError
-// 	if v.fieldV.Kind() == reflect.String {
-// 		for _, item := range items {
-// 			if item == v.fieldV.String() {
-// 				return nil
-// 			}
-// 		}
-// 		vErr = &ValidationError{v.fieldT.Name, fmt.Errorf("field must be in set of %v", items)}
-// 	}
-// 	if v.fieldV.Kind() == reflect.Int {
-// 		for _, item := range items {
-// 			if item == strconv.Itoa(int(v.fieldV.Int())) {
-// 				return nil
-// 			}
-// 		}
-// 		vErr = &ValidationError{v.fieldT.Name, fmt.Errorf("field must be in set of %v", items)}
-// 	}
-// 	if vErr == nil {
-// 		vErr = &ValidationError{v.fieldT.Name, fmt.Errorf("field must be integer or string")}
-// 	}
-// 	return vErr
-// }
 
 func (v *Validator) inSlice(rexp regexp.Regexp, tag string) *ValidationError {
 	if !rexp.MatchString(tag) {
@@ -208,22 +132,6 @@ func (v *Validator) inSlice(rexp regexp.Regexp, tag string) *ValidationError {
 	}
 	return vErr
 }
-
-// func (v *Validator) rexp(pattern string) *ValidationError {
-// 	typeErr := v.isStr()
-// 	if typeErr != nil {
-// 		return typeErr
-// 	}
-// 	pattern = strings.ReplaceAll(pattern, `\\`, `\`)
-// 	rexp, err := regexp.Compile(pattern)
-// 	if err != nil {
-// 		return &ValidationError{v.fieldT.Name, fmt.Errorf("%v is not valid pattern", pattern)}
-// 	}
-// 	if !rexp.MatchString(v.fieldV.String()) {
-// 		return &ValidationError{v.fieldT.Name, fmt.Errorf("field is not valid for pattern %v", pattern)}
-// 	}
-// 	return nil
-// }
 
 func (v *Validator) rexp(rexp regexp.Regexp, tag string) *ValidationError {
 	if !rexp.MatchString(tag) {
@@ -324,7 +232,6 @@ func validateField(refT reflect.Type, refV reflect.Value, i int, errBuf io.Strin
 }
 
 func Validate(v interface{}) error {
-	// Place your code here
 	errBuf := strings.Builder{}
 	refV := reflect.ValueOf(v)
 	refT := reflect.TypeOf(v)
